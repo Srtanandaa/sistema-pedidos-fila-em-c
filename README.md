@@ -1,2 +1,13 @@
-# sistema-pedidos-fila-em-c
-Sistema simples de gerenciamento de pedidos de restaurante em linguagem C. Permite adicionar pedidos por mesa, listar os pedidos pendentes, atender os pedidos em ordem de chegada (fila), e visualizar o status de todas as mesas (ocupadas ou disponíveis).
+# Sistema de Controle de Pedidos para Restaurante (em C)
+
+Este projeto simula um sistema de fila de pedidos por mesa em um restaurante. O atendente pode:
+
+Adicionar pedidos para uma mesa específica.
+
+Atender os pedidos em ordem (fila FIFO), liberando a mesa.
+
+Consultar os pedidos pendentes de uma determinada mesa.
+
+Visualizar o status atual de todas as mesas (ocupadas ou livres).
+
+Estrutura baseada em fila dinâmica com alocação dinâmica de memória.
