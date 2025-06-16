@@ -1,0 +1,258 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_MESAS 10
+#define MAX_PEDIDO 100
+
+typedef struct Pedido {
+    char descricao[MAX_PEDIDO];
+    int numeroMesa;
+    struct Pedido* proximo;
+} Pedido;
+
+typedef struct {
+    Pedido* inicio;
+    Pedido* fim;
+} FilaPedidos;
+
+void inicializarFila(FilaPedidos* fila) {
+    fila->inicio = NULL;
+    fila->fim = NULL;
+}
+
+void adicionarPedido(FilaPedidos* fila, const char* desc, int mesa) {
+    Pedido* novo = (Pedido*)malloc(sizeof(Pedido));
+    if (!novo) {
+        printf("Erro de memória ao adicionar pedido.\n");
+        return;
+    }
+    strcpy(novo->descricao, desc);
+    novo->numeroMesa = mesa;
+    novo->proximo = NULL;
+
+    if (fila->fim == NULL) {
+        fila->inicio = fila->fim = novo;
+    } else {
+        fila->fim->proximo = novo;
+        fila->fim = novo;
+    }
+
+    printf("Pedido \"%s\" adicionado para a mesa %d.\n", desc, mesa);
+}
+
+void atenderProximoPedido(FilaPedidos* fila, int statusMesas[]) {
+    if (fila->inicio == NULL) {
+        printf("Nenhum pedido pendente para atender.\n");
+        return;
+    }
+
+    int mesaAtual = fila->inicio->numeroMesa;
+    printf("Atendendo pedidos da mesa %d:\n", mesaAtual);
+
+    while (fila->inicio != NULL && fila->inicio->numeroMesa == mesaAtual) {
+        Pedido* temp = fila->inicio;
+        printf(" - %s\n", temp->descricao);
+
+        fila->inicio = fila->inicio->proximo;
+        free(temp);
+    }
+
+    if (fila->inicio == NULL) {
+        fila->fim = NULL;
+    }
+
+    statusMesas[mesaAtual - 1] = 0;  
+}
+
+void listarPedidosMesa(FilaPedidos* fila, int mesa) {
+    Pedido* atual = fila->inicio;
+    int encontrou = 0;
+    printf("Pedidos pendentes da mesa %d:\n", mesa);
+    while (atual != NULL) {
+        if (atual->numeroMesa == mesa) {
+            printf(" - %s\n", atual->descricao);
+            encontrou = 1;
+        }
+        atual = atual->proximo;
+    }
+    if (!encontrou) {
+        printf("Nenhum pedido pendente para essa mesa.\n");
+    }
+}
+
+void mostrarStatusMesas(int status[], int totalMesas) {
+    printf("\n==== STATUS DAS MESAS ====\n");
+    for (int i = 0; i < totalMesas; i++) {
+        printf("Mesa %d: ", i + 1);
+        if (status[i] == 0)
+            printf("Disponível\n");
+        else if (status[i] == 1)
+            printf("Ocupada com pedidos\n");
+        else
+            printf("Status desconhecido\n");
+    }
+}
+
+void exibirMenuPedidos() {
+    printf("\nEscolha seu pedido:\n");
+    printf("1 - Pizza de calabresa\n");
+    printf("2 - Pizza de mussarela\n");
+    printf("3 - Pizza portuguesa\n");
+    printf("\n");
+    printf("4 - Macarrão a bolonhesa\n");
+    printf("5 - Lasanha 4 queijos\n");
+    printf("6 - Nhoque\n");
+    printf("\n");
+    printf("7 - Gelato\n");
+    printf("\n");
+    printf("8 - Refrigerante\n");
+    printf("9 - Suco\n");
+    printf("\n");
+    printf("0 - Voltar ao menu principal\n");
+}
+
+void processarPedidos(FilaPedidos* fila, int mesa, int* statusMesa) {
+    char linha[256];
+
+    do {
+        exibirMenuPedidos();
+        printf("\nDigite os números dos pedidos separados por espaço: ");
+        if (!fgets(linha, sizeof(linha), stdin)) {
+            printf("Erro na leitura dos pedidos.\n");
+            break;
+        }
+
+        char* token = strtok(linha, " \t\n");
+        int adicionouPedido = 0;
+
+        while (token != NULL) {
+            int opcPedido = atoi(token);
+            if (opcPedido == 0) {
+                return; 
+            }
+
+            char pedidoTmp[MAX_PEDIDO];
+            switch (opcPedido) {
+                case 1: strcpy(pedidoTmp, "Pizza de calabresa"); break;
+                case 2: strcpy(pedidoTmp, "Pizza de mussarela"); break;
+                case 3: strcpy(pedidoTmp, "Pizza portuguesa"); break;
+                case 4: strcpy(pedidoTmp, "Macarrão a bolonhesa"); break;
+                case 5: strcpy(pedidoTmp, "Lasanha 4 queijos"); break;
+                case 6: strcpy(pedidoTmp, "Nhoque"); break;
+                case 7: strcpy(pedidoTmp, "Gelato"); break;
+                case 8: strcpy(pedidoTmp, "Refrigerante"); break;
+                case 9: strcpy(pedidoTmp, "Suco"); break;
+                default:
+                    printf("Pedido inválido: %s\n", token);
+                    token = strtok(NULL, " \t\n");
+                    continue;
+            }
+
+            adicionarPedido(fila, pedidoTmp, mesa);
+            *statusMesa = 1;
+            adicionouPedido = 1;
+
+            token = strtok(NULL, " \t\n");
+        }
+
+        if (adicionouPedido) {
+            char resposta;
+            printf("Deseja adicionar mais algum pedido? (S/N): ");
+            scanf(" %c", &resposta);
+            getchar(); // limpa buffer
+            if (resposta != 'S' && resposta != 's') {
+                break;
+            }
+        }
+
+    } while (1);
+}
+
+int lerNumeroMesa() {
+    char linha[100];
+    int mesa;
+    printf("Número da mesa (1 a %d): ", MAX_MESAS);
+    if (fgets(linha, sizeof(linha), stdin) == NULL) {
+        printf("Entrada inválida!\n");
+        return -1;
+    }
+
+    char extra;
+    int nLidos = sscanf(linha, "%d %c", &mesa, &extra);
+    if (nLidos != 1 || mesa < 1 || mesa > MAX_MESAS) {
+        if (nLidos > 1) {
+            printf("Só é possível escolher uma mesa por vez!\n");
+        } else {
+            printf("Número da mesa inválido!\n");
+        }
+        return -1;
+    }
+    return mesa;
+}
+
+int main() {
+    FilaPedidos filaGlobal;
+    int statusMesas[MAX_MESAS] = {0}; 
+
+    inicializarFila(&filaGlobal);
+
+    int opcao, mesa;
+
+    do {
+        printf("\n==== SISTEMA DE PEDIDOS ====\n");
+        printf("1. Adicionar pedido\n");
+        printf("2. Atender próximo pedido \n");
+        printf("3. Listar pedidos da mesa\n");
+        printf("4. Mostrar status das mesas\n");
+        printf("0. Sair\n");
+        printf("Escolha uma opção: ");
+
+        if (scanf("%d", &opcao) != 1) {
+            printf("Entrada inválida!\n");
+            while(getchar() != '\n'); 
+            continue;
+        }
+        getchar(); 
+
+        switch (opcao) {
+            case 1:
+                mesa = lerNumeroMesa();
+                if (mesa == -1) break;
+                processarPedidos(&filaGlobal, mesa, &statusMesas[mesa - 1]);
+                break;
+
+            case 2:
+                atenderProximoPedido(&filaGlobal, statusMesas);
+                break;
+
+            case 3:
+                mesa = lerNumeroMesa();
+                if (mesa == -1) break;
+                listarPedidosMesa(&filaGlobal, mesa);
+                break;
+
+            case 4:
+                mostrarStatusMesas(statusMesas, MAX_MESAS);
+                break;
+
+            case 0:
+                printf("Encerrando o sistema.\n");
+                break;
+
+            default:
+                printf("Opção inválida!\n");
+        }
+
+    } while (opcao != 0);
+
+
+    Pedido* atual = filaGlobal.inicio;
+    while (atual != NULL) {
+        Pedido* temp = atual;
+        atual = atual->proximo;
+        free(temp);
+    }
+
+    return 0;
+}
